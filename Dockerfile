@@ -18,4 +18,4 @@ RUN apt install -y wget && \
 # Copy bot code
 COPY . .
 
-CMD ["python", "bot.py"]
+CMD ["python", "ana.py"]
