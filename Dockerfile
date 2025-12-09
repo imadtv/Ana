@@ -1,4 +1,4 @@
-# استخدم صورة Python 3.11 رسمية
+# استخدم Python 3.11 slim official image
 FROM python:3.11-slim
 
 # تثبيت FFmpeg و curl
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# إنشاء مجلد التطبيق
+# تعيين مجلد العمل
 WORKDIR /app
 
 # نسخ ملفات المشروع
