@@ -20,30 +20,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     step = users[chat_id]["step"]
 
-    # مرحلة key
     if step == "await_key":
         users[chat_id]["stream_key"] = text
         users[chat_id]["step"] = "await_url"
-        await update.message.reply_text("✔️ تم حفظ Stream Key.\nأرسل الآن رابط M3U8 أو MP4.")
+        await update.message.reply_text("✔️ تم حفظ المفتاح.\nالآن أرسل رابط M3U8 أو MP4.")
         return
 
-    # مرحلة URL
     if step == "await_url":
         users[chat_id]["url"] = text
-        await update.message.reply_text("⏳ جاري تشغيل البث...")
+        await update.message.reply_text("⏳ جاري بدء البث...")
 
-        stream_key = users[chat_id]["stream_key"]
         video_url = users[chat_id]["url"]
+        stream_key = users[chat_id]["stream_key"]
 
         fb_rtmp = f"rtmps://live-api-s.facebook.com:443/rtmp/{stream_key}"
 
-        # الفلتر الصحيح للصورة المحلية
+        # -----------------------------
+        # Watermark يسار – أسفل + حجم صغير
+        # -----------------------------
         ffmpeg_cmd = [
             "ffmpeg",
             "-re",
             "-i", video_url,
             "-i", "/app/watermark.png",
-            "-filter_complex", "overlay=10:H-h-10",
+            "-filter_complex", "scale=80:-1[wm];[0:v][wm]overlay=15:H-h-15",
             "-c:v", "libx264",
             "-preset", "veryfast",
             "-b:a", "96k",
@@ -59,17 +59,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             users[chat_id]["step"] = "streaming"
             await update.message.reply_text("🎥 تم بدء البث بنجاح!")
         except Exception as e:
-            await update.message.reply_text(f"❌ خطأ أثناء تشغيل البث:\n{e}")
+            await update.message.reply_text(f"❌ خطأ أثناء البث: {e}")
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-
     if chat_id in users and "process" in users[chat_id]:
         users[chat_id]["process"].kill()
         users[chat_id]["step"] = "await_key"
         await update.message.reply_text("⛔ تم إيقاف البث.")
     else:
-        await update.message.reply_text("لا يوجد بث شغال الآن.")
+        await update.message.reply_text("لا يوجد بث شغال حالياً.")
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -78,5 +77,5 @@ app.add_handler(CommandHandler("stop", stop))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 if __name__ == "__main__":
-    print("🔹 Bot is running...")
+    print("🔹 Bot started...")
     app.run_polling()
