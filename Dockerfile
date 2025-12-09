@@ -1,22 +1,21 @@
-# استخدم Python 3.11 slim official image
-FROM python:3.11-slim
+FROM python:3.10-slim
 
-# تثبيت FFmpeg و curl
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Install FFmpeg
+RUN apt update && apt install -y ffmpeg
 
-# تعيين مجلد العمل
+# Create app directory
 WORKDIR /app
 
-# نسخ ملفات المشروع
-COPY . /app
+# Copy requirements
+COPY requirements.txt .
 
-# تثبيت مكتبات Python
-RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# أمر تشغيل البوت
-CMD ["python", "ana.py"]
+# ⬇️ Download watermark locally (يتم تخزين الصورة داخل الدوكر)
+RUN apt install -y wget && \
+    wget -O /app/watermark.png "https://i.top4top.io/p_3630zi02e1.jpg"
+
+# Copy bot code
+COPY . .
+
+CMD ["python", "bot.py"]
