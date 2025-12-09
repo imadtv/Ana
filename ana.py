@@ -4,7 +4,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 BOT_TOKEN = "8327550793:AAHaH5nAg5yQbMZwqtW00qg8PKW4A1RSwp0"
 
-# لتخزين بيانات كل مستخدم
+# لتخزين بيانات المستخدمين
 users = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -28,7 +28,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("✔️ تم حفظ Stream Key.\nالآن أرسل رابط M3U8 أو MP4.")
         return
 
-    # استقبال رابط الفيديو
+    # استقبال URL الفيديو
     if step == "await_url":
         users[chat_id]["url"] = text
         await update.message.reply_text("⏳ جاري بدء البث على فيسبوك...")
@@ -38,13 +38,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         fb_rtmp = f"rtmps://live-api-s.facebook.com:443/rtmp/{stream_key}"
 
-        # أمر FFmpeg مع Watermark
+        # FFmpeg مع صورة ووتارمارك محفوظة محلياً في Docker
         ffmpeg_cmd = [
             "ffmpeg",
-            "-re",  # قراءة الفيديو بالسرعة الطبيعية
+            "-re",
             "-i", video_url,
             "-filter_complex",
-            "movie=https://i.top4top.io/p_3630zi02e1.jpg[wm];[0:v][wm]overlay=10:main_h-overlay_h-10",
+            "movie=/app/watermark.png[wm];[0:v][wm]overlay=10:main_h-overlay_h-10",
             "-c:v", "libx264",
             "-preset", "veryfast",
             "-b:a", "96k",
@@ -55,13 +55,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
 
         try:
-            # تشغيل FFmpeg كعملية مستقلة
             process = subprocess.Popen(ffmpeg_cmd)
             users[chat_id]["process"] = process
             users[chat_id]["step"] = "streaming"
             await update.message.reply_text("🎥 تم بدء البث بنجاح!")
         except Exception as e:
-            await update.message.reply_text(f"❌ حدث خطأ أثناء بدء البث: {e}")
+            await update.message.reply_text(f"❌ حدث خطأ أثناء بدء البث:\n{e}")
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -73,15 +72,13 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("لا يوجد بث شغال حالياً.")
 
-# إنشاء تطبيق البوت
+# إنشاء البوت وتشغيله
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# إضافة الأوامر handlers
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("stop", stop))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-# تشغيل البوت
 if __name__ == "__main__":
     print("🔹 البوت بدأ العمل...")
     app.run_polling()
