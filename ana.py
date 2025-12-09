@@ -2,7 +2,7 @@ import subprocess
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-BOT_TOKEN = "8327108993:AAEpEDioytXtOwWlhY3QxFlMVkyoQ1kRikQ"
+BOT_TOKEN = "8327550793:AAHaH5nAg5yQbMZwqtW00qg8PKW4A1RSwp0"
 
 # لتخزين بيانات كل مستخدم
 users = {}
