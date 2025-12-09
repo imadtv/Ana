@@ -4,12 +4,11 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 BOT_TOKEN = "8327550793:AAHaH5nAg5yQbMZwqtW00qg8PKW4A1RSwp0"
 
-# لتخزين بيانات المستخدمين
 users = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users[update.effective_chat.id] = {"step": "await_key"}
-    await update.message.reply_text("👋 أرسل لي Stream Key للبث في فيسبوك.")
+    await update.message.reply_text("👋 أرسل لي Stream Key للبث على فيسبوك.")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -21,30 +20,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     step = users[chat_id]["step"]
 
-    # استقبال Stream Key
+    # مرحلة key
     if step == "await_key":
         users[chat_id]["stream_key"] = text
         users[chat_id]["step"] = "await_url"
-        await update.message.reply_text("✔️ تم حفظ Stream Key.\nالآن أرسل رابط M3U8 أو MP4.")
+        await update.message.reply_text("✔️ تم حفظ Stream Key.\nأرسل الآن رابط M3U8 أو MP4.")
         return
 
-    # استقبال URL الفيديو
+    # مرحلة URL
     if step == "await_url":
         users[chat_id]["url"] = text
-        await update.message.reply_text("⏳ جاري بدء البث على فيسبوك...")
+        await update.message.reply_text("⏳ جاري تشغيل البث...")
 
         stream_key = users[chat_id]["stream_key"]
         video_url = users[chat_id]["url"]
 
         fb_rtmp = f"rtmps://live-api-s.facebook.com:443/rtmp/{stream_key}"
 
-        # FFmpeg مع صورة ووتارمارك محفوظة محلياً في Docker
+        # الفلتر الصحيح للصورة المحلية
         ffmpeg_cmd = [
             "ffmpeg",
             "-re",
             "-i", video_url,
-            "-filter_complex",
-            "movie=/app/watermark.png[wm];[0:v][wm]overlay=10:main_h-overlay_h-10",
+            "-i", "/app/watermark.png",
+            "-filter_complex", "overlay=10:H-h-10",
             "-c:v", "libx264",
             "-preset", "veryfast",
             "-b:a", "96k",
@@ -60,7 +59,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             users[chat_id]["step"] = "streaming"
             await update.message.reply_text("🎥 تم بدء البث بنجاح!")
         except Exception as e:
-            await update.message.reply_text(f"❌ حدث خطأ أثناء بدء البث:\n{e}")
+            await update.message.reply_text(f"❌ خطأ أثناء تشغيل البث:\n{e}")
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -70,9 +69,8 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
         users[chat_id]["step"] = "await_key"
         await update.message.reply_text("⛔ تم إيقاف البث.")
     else:
-        await update.message.reply_text("لا يوجد بث شغال حالياً.")
+        await update.message.reply_text("لا يوجد بث شغال الآن.")
 
-# إنشاء البوت وتشغيله
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
@@ -80,5 +78,5 @@ app.add_handler(CommandHandler("stop", stop))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 if __name__ == "__main__":
-    print("🔹 البوت بدأ العمل...")
+    print("🔹 Bot is running...")
     app.run_polling()
